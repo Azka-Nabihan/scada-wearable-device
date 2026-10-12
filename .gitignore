@@ -1,0 +1,39 @@
+# Prerequisites & Compilers
+*.d
+*.o
+*.obj
+*.bin
+*.elf
+*.hex
+
+# PlatformIO & Arduino
+.pio/
+.pioenvs/
+.piolibdeps/
+build/
+*.app.zip
+
+# Python & Caches
+__pycache__/
+*.py[cod]
+
+# Editor & OS Junk
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Dokumentasi Internal & Laporan Personal Kuliah (Eksklusif Lokal)
+docs/
+scripts/generate_individual_report.py
+*.docx
+
+# Tangkapan Layar & Media Percobaan (Eksklusif Lokal)
+dashboard/screenshot_*.png
+*screenshot*.png
+*.png.tmp
+
+# Logs & Local Environments
+*.log
+.env

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Dashboard Command Center SCaDA - Smart Cuff and Distress Alarm untuk pemantauan telemetri real-time LoRa 433 MHz">
+  <title>SCaDA Command Center — Tactical Telemetry & Distress Monitor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header Command Center -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-badge">SCaDA POSKO</div>
+        <div class="brand-titles">
+          <h1>COMMAND CENTER TELEMETRI & DISTRESS ALARM</h1>
+          <p class="subtitle">Sistem Pemantauan Personel Wearable Cuff (PASS NFPA 1982) • LoRa 433 MHz</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div class="connection-status" id="connection-status-pill">
+          <span class="status-dot disconnected" id="status-dot" aria-hidden="true"></span>
+          <span id="connection-label">DISCONNECTED</span>
+        </div>
+
+        <div class="link-stats" aria-label="Statistik Tautan Radio LoRa">
+          <div class="stat-item">
+            <span class="stat-label">NODE:</span>
+            <span class="stat-value" id="node-id">Cuff #1</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">RSSI:</span>
+            <span class="stat-value" id="val-rssi">-- dBm</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">SNR:</span>
+            <span class="stat-value" id="val-snr">-- dB</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">PAKET:</span>
+            <span class="stat-value" id="val-pkt-count">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">TAUTAN LORA:</span>
+            <span class="stat-value link-waiting" id="val-link-status">MENUNGGU...</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">TERAKHIR DITERIMA:</span>
+            <span class="stat-value" id="val-last-seen">--</span>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button id="btn-connect" type="button" class="btn btn-primary" title="Hubungkan ke ESP32 Receiver via USB Serial">
+            <span class="btn-icon">🔌</span> Hubungkan USB LoRa
+          </button>
+          <button id="btn-disconnect" type="button" class="btn btn-secondary" disabled title="Putuskan koneksi port serial">
+            Putuskan
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Command Body -->
+    <main class="main-content">
+      <!-- Banner Status FSM Alarm -->
+      <section class="alarm-section" aria-label="Status Alarm Personel">
+        <div id="alarm-banner" class="alarm-banner status-normal" role="alert" aria-live="assertive">
+          <div class="alarm-content">
+            <span class="alarm-icon" id="alarm-icon" aria-hidden="true">🛡️</span>
+            <div class="alarm-text">
+              <h2 id="alarm-title" class="alarm-title">STATUS: NORMAL (SAFE)</h2>
+              <p id="alarm-desc" class="alarm-desc">Personel terdeteksi bergerak aktif. Parameter fisiologis dalam batas aman.</p>
+            </div>
+          </div>
+          <div class="alarm-actions">
+            <button id="btn-ack-alarm" type="button" class="btn btn-danger btn-ack" hidden title="Bisukan sirene audio laptop (atau tekan Escape)">
+              🔕 Akui / Bisukan Sirene (Esc)
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 Metric Cards Grid -->
+      <section class="metrics-section" aria-label="Parameter Fisiologis Vital">
+        <!-- Card 1: Heart Rate -->
+        <article class="metric-card" id="card-hr">
+          <div class="metric-header">
+            <span class="metric-title">DENYUT JANTUNG</span>
+            <span class="metric-badge" id="badge-hr">MAX30102</span>
+          </div>
+          <div class="metric-body">
+            <span class="metric-number" id="val-hr">--</span>
+            <span class="metric-unit">BPM</span>
+          </div>
+          <div class="metric-footer">
+            <span class="metric-status" id="status-hr">Menunggu paket...</span>
+            <span class="metric-target">Target: 60 - 100</span>
+          </div>
+        </article>
+
+        <!-- Card 2: SpO2 -->
+        <article class="metric-card" id="card-spo2">
+          <div class="metric-header">
+            <span class="metric-title">SATURASI OKSIGEN</span>
+            <span class="metric-badge" id="badge-spo2">Reflektif</span>
+          </div>
+          <div class="metric-body">
+            <span class="metric-number" id="val-spo2">--</span>
+            <span class="metric-unit">%</span>
+          </div>
+          <div class="metric-footer">
+            <span class="metric-status" id="status-spo2">Menunggu paket...</span>
+            <span class="metric-target">Aman: ≥ 95%</span>
+          </div>
+        </article>
+
+        <!-- Card 3: Skin Temperature -->
+        <article class="metric-card" id="card-temp">
+          <div class="metric-header">
+            <span class="metric-title">SUHU KULIT</span>
+            <span class="metric-badge" id="badge-temp">MCP9808 I2C</span>
+          </div>
+          <div class="metric-body">
+            <span class="metric-number" id="val-temp">--</span>
+            <span class="metric-unit">°C</span>
+          </div>
+          <div class="metric-footer">
+            <span class="metric-status" id="status-temp">Menunggu paket...</span>
+            <span class="metric-target">Normal: 30 - 36°C</span>
+          </div>
+        </article>
+
+        <!-- Card 4: Physiological Strain Index -->
+        <article class="metric-card" id="card-psi">
+          <div class="metric-header">
+            <span class="metric-title">INDEKS BEBAN FISIOLOGIS</span>
+            <span class="metric-badge" id="badge-psi">Moran (1998)</span>
+          </div>
+          <div class="metric-body">
+            <span class="metric-number" id="val-psi">--</span>
+            <span class="metric-tag" id="val-psi-tag">IDLE</span>
+          </div>
+          <div class="psi-meter-container" aria-hidden="true">
+            <div class="psi-meter-track">
+              <div class="psi-meter-fill" id="psi-meter-fill" style="width: 0%;"></div>
+            </div>
+            <div class="psi-meter-scale">
+              <span>0 (Aman)</span>
+              <span>4.5</span>
+              <span>6.5 (Kritis)</span>
+              <span>10</span>
+            </div>
+          </div>
+          <div class="metric-footer">
+            <span class="metric-status" id="status-psi">Rentang aman < 4.5</span>
+            <span class="metric-target">Skala 0 - 10</span>
+          </div>
+        </article>
+      </section>
+
+      <!-- Visual Analytics & Historical Log -->
+      <section class="analytics-section">
+        <!-- Live Sparklines Canvas -->
+        <div class="chart-container">
+          <div class="section-card-header">
+            <div>
+              <h3>TREN TELEMETRI REAL-TIME (60 DETIK)</h3>
+              <p class="section-card-desc">Monitoring fluktuasi denyut jantung dan indeks beban regangan fisiologis</p>
+            </div>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-color legend-hr"></span> Denyut Jantung (BPM)</span>
+              <span class="legend-item"><span class="legend-color legend-psi"></span> Indeks PSI (x10)</span>
+            </div>
+          </div>
+          <div class="canvas-wrapper">
+            <canvas id="chart-canvas" width="700" height="240" role="img" aria-label="Grafik tren denyut jantung dan indeks regangan fisiologis"></canvas>
+          </div>
+        </div>
+
+        <!-- Telemetry History Log Table -->
+        <div class="log-container">
+          <div class="section-card-header">
+            <div>
+              <h3>LOG TELEMETRI RECEIVER</h3>
+              <p class="section-card-desc">Riwayat transmisi masuk (menampilkan maks. 200 baris terbaru)</p>
+            </div>
+            <div class="log-actions">
+              <button id="btn-export-csv" type="button" class="btn btn-sm btn-outline" title="Unduh riwayat telemetri lengkap sesi ini ke format CSV">
+                📥 Unduh CSV
+              </button>
+              <button id="btn-clear-log" type="button" class="btn btn-sm btn-ghost" title="Bersihkan tampilan tabel log">
+                Bersihkan
+              </button>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="telemetry-table" id="telemetry-table">
+              <thead>
+                <tr>
+                  <th scope="col">Waktu</th>
+                  <th scope="col">Pkt</th>
+                  <th scope="col">HR</th>
+                  <th scope="col">SpO2</th>
+                  <th scope="col">Suhu</th>
+                  <th scope="col">PSI</th>
+                  <th scope="col">Gerak</th>
+                  <th scope="col">Alarm</th>
+                  <th scope="col">RSSI</th>
+                </tr>
+              </thead>
+              <tbody id="telemetry-tbody">
+                <tr class="empty-row">
+                  <td colspan="9">Belum ada paket telemetri diterima. Hubungkan kabel USB receiver untuk memulai.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>SCaDA Command Center • Despro 2 Kelompok 23 DTE FTUI</span>
+      <span>Protokol LoRa SX1278 433 MHz (SF7/BW125/CR4-5) • Web Serial 115200 Baud</span>
+    </footer>
+  </div>
+
+  <!-- Script Module -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
