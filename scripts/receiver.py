@@ -68,7 +68,47 @@ def main():
                 if not line:
                     continue
 
-                # Cek jika baris berupa JSON telemetri
+                # 1. Format Teks SCaDA (dari 06_radio_lora_rx.ino)
+                if "PAKET MASUK" in line or "RSSI:" in line:
+                    import re
+                    rssi_m = re.search(r"RSSI:\s*(-?\d+)", line)
+                    snr_m = re.search(r"SNR:\s*(-?[\d.]+)", line)
+                    last_rssi = rssi_m.group(1) if rssi_m else "-"
+                    last_snr = snr_m.group(1) if snr_m else "-"
+                    continue
+
+                if "HR:" in line and "SpO2:" in line:
+                    import re
+                    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    packet_count += 1
+
+                    node_m = re.search(r"(?:Data Diterima\s*:\s*)?([A-Za-z0-9\s#]+?)\s*\|", line)
+                    hr_m = re.search(r"HR:\s*(\d+)", line)
+                    spo2_m = re.search(r"SpO2:\s*(\d+)", line)
+                    temp_m = re.search(r"Temp:\s*([\d.]+)", line)
+                    psi_m = re.search(r"(?:mPSI|PSI):\s*([\d.]+)", line)
+                    stat_m = re.search(r"Stat:\s*([A-Za-z0-9_-]+)", line)
+                    alarm_m = re.search(r"Alarm:\s*([A-Za-z0-9_-]+)", line)
+                    pkt_m = re.search(r"Pkt:\s*(\d+)", line)
+
+                    node_id = node_m.group(1).strip() if node_m else "Cuff #1"
+                    hr = hr_m.group(1) if hr_m else "-"
+                    spo2 = spo2_m.group(1) if spo2_m else "-"
+                    temp = temp_m.group(1) if temp_m else "-"
+                    psi = psi_m.group(1) if psi_m else "-"
+                    stat = stat_m.group(1) if stat_m else "MOVE"
+                    alarm = alarm_m.group(1) if alarm_m else "OK"
+                    pkt_no = pkt_m.group(1) if pkt_m else str(packet_count)
+
+                    rssi = locals().get("last_rssi", "-")
+                    snr = locals().get("last_snr", "-")
+
+                    print(f"[{now_str}] #{packet_count:04d} (Pkt:{pkt_no}) | {node_id} | HR:{hr} bpm | SpO2:{spo2}% | Temp:{temp}C | mPSI:{psi} | Alarm:{alarm} | RSSI:{rssi} dBm | SNR:{snr} dB")
+                    writer.writerow([now_str, node_id, hr, spo2, temp, "-", alarm, psi, rssi, snr])
+                    csv_file.flush()
+                    continue
+
+                # 2. Format JSON Telemetri
                 if line.startswith("{") and line.endswith("}"):
                     try:
                         data = json.loads(line)
@@ -86,10 +126,7 @@ def main():
                             rssi = data.get("rssi", "-")
                             snr = data.get("snr", "-")
 
-                            # Cetak format ringkas di terminal
                             print(f"[{now_str}] #{packet_count:04d} | Node:{node_id} | HR:{hr} bpm | SpO2:{spo2}% | Temp:{temp}C | PASS:{pass_st} | RSSI:{rssi} dBm | SNR:{snr} dB")
-
-                            # Simpan ke CSV
                             writer.writerow([now_str, node_id, hr, spo2, temp, rr, pass_st, risk, rssi, snr])
                             csv_file.flush()
                         else:
