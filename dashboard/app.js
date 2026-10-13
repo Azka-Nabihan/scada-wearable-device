@@ -275,6 +275,10 @@ function ingestTelemetryData(data) {
   } else if (data.temp > 37.5) {
     DOM.cardTemp.className = 'metric-card alert-warn';
     DOM.statusTemp.textContent = 'Suhu Meningkat';
+  } else if (data.temp < 30.0) {
+    // Di bawah suhu kulit wajar: sensor kemungkinan membaca udara ruangan
+    DOM.cardTemp.className = 'metric-card alert-warn';
+    DOM.statusTemp.textContent = 'Sensor Tidak Menempel Kulit';
   } else {
     DOM.cardTemp.className = 'metric-card';
     DOM.statusTemp.textContent = 'Suhu Kulit Normal';
@@ -287,11 +291,12 @@ function ingestTelemetryData(data) {
   const psiPercent = Math.min(100, Math.max(0, (data.psi / 10) * 100));
   DOM.psiMeterFill.style.width = `${psiPercent}%`;
 
+  // Ambang identik dengan firmware updateMPSI(): WARN >= 3.0, CRIT >= 6.5
   if (data.psi >= 6.5) {
     DOM.valPsiTag.className = 'metric-tag tag-crit';
     DOM.cardPsi.className = 'metric-card alert-crit';
     DOM.statusPsi.textContent = 'Strain Kritis (Risiko Kolaps)';
-  } else if (data.psi >= 4.5) {
+  } else if (data.psi >= 3.0) {
     DOM.valPsiTag.className = 'metric-tag tag-warn';
     DOM.cardPsi.className = 'metric-card alert-warn';
     DOM.statusPsi.textContent = 'Beban Termal/Kardio Tinggi';

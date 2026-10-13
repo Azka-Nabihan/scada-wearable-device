@@ -491,6 +491,7 @@ h1, h2, h3 {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
 .metric-title {
@@ -508,6 +509,7 @@ h1, h2, h3 {
   background-color: var(--bg-surface-elevated);
   color: var(--text-muted);
   border: 1px solid var(--border-subtle);
+  white-space: nowrap;
 }
 
 .metric-body {

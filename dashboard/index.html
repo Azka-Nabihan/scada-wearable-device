@@ -105,7 +105,7 @@
         <article class="metric-card" id="card-spo2">
           <div class="metric-header">
             <span class="metric-title">SATURASI OKSIGEN</span>
-            <span class="metric-badge" id="badge-spo2">Reflektif</span>
+            <span class="metric-badge" id="badge-spo2">MAX30102</span>
           </div>
           <div class="metric-body">
             <span class="metric-number" id="val-spo2">--</span>
@@ -121,7 +121,7 @@
         <article class="metric-card" id="card-temp">
           <div class="metric-header">
             <span class="metric-title">SUHU KULIT</span>
-            <span class="metric-badge" id="badge-temp">MCP9808 I2C</span>
+            <span class="metric-badge" id="badge-temp">MCP9808</span>
           </div>
           <div class="metric-body">
             <span class="metric-number" id="val-temp">--</span>
@@ -133,11 +133,11 @@
           </div>
         </article>
 
-        <!-- Card 4: Physiological Strain Index -->
+        <!-- Card 4: Physiological Strain Index (mPSI, Moran et al. 1999) -->
         <article class="metric-card" id="card-psi">
           <div class="metric-header">
             <span class="metric-title">INDEKS BEBAN FISIOLOGIS</span>
-            <span class="metric-badge" id="badge-psi">Moran (1998)</span>
+            <span class="metric-badge" id="badge-psi">MAX30102 + MCP9808</span>
           </div>
           <div class="metric-body">
             <span class="metric-number" id="val-psi">--</span>
@@ -149,14 +149,14 @@
             </div>
             <div class="psi-meter-scale">
               <span>0 (Aman)</span>
-              <span>4.5</span>
+              <span>3.0</span>
               <span>6.5 (Kritis)</span>
               <span>10</span>
             </div>
           </div>
           <div class="metric-footer">
-            <span class="metric-status" id="status-psi">Rentang aman < 4.5</span>
-            <span class="metric-target">Skala 0 - 10</span>
+            <span class="metric-status" id="status-psi">Rentang aman < 3.0</span>
+            <span class="metric-target">Skala 0 - 10 · Moran 1999</span>
           </div>
         </article>
       </section>
